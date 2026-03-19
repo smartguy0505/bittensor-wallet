@@ -55,14 +55,25 @@ btw doctor
 
 ## Publishing to npm (GitHub Actions)
 
-The workflow [`.github/workflows/publish-npm.yml`](.github/workflows/publish-npm.yml) runs when you **publish a GitHub Release** (not a draft). It runs `lint`, `test`, then `npm publish` with [provenance](https://docs.npmjs.com/generating-provenance-statements).
+The workflow [`.github/workflows/publish-npm.yml`](.github/workflows/publish-npm.yml) runs when you **publish a GitHub Release** (not a draft). It runs `lint`, `test`, then `npm publish` using **[Trusted publishing](https://docs.npmjs.com/trusted-publishers)** (OIDC). No long-lived **`NPM_TOKEN`** is required.
+
+### One-time: link npm ↔ GitHub Actions
+
+1. On [npmjs.com](https://www.npmjs.com/) open your package → **Settings** → **Trusted publishing**.
+2. Choose **GitHub Actions** and set:
+   - **Repository** — `smartguy0505/bittensor-wallet` (owner/repo, exact match).
+   - **Workflow filename** — `publish-npm.yml` (filename only, case-sensitive; must exist under `.github/workflows/`).
+3. Save. npm does not validate until the next publish — double-check spelling.
+
+The workflow already sets `permissions: id-token: write` and uses **Node 22** + **npm ≥ 11.5.1**, as required by npm for OIDC publishes. [Trusted publishing docs](https://docs.npmjs.com/trusted-publishers) · [GitHub OIDC](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
+
+### Each release
 
 1. Bump `"version"` in `package.json` and push to the default branch.
-2. Create and push a matching tag (e.g. `git tag v0.0.3 && git push origin v0.0.3`).
+2. Create and push a matching tag (e.g. `git tag v0.0.6 && git push origin v0.0.6`).
 3. On GitHub: **Releases → Draft a new release** → choose that tag → **Publish release**.
-4. In the repo: **Settings → Secrets and variables → Actions** → add **`NPM_TOKEN`** (an [npm automation token](https://www.npmjs.com/settings/~/tokens)).
 
-If publish fails on `--provenance`, remove that flag from the workflow or ensure your npm account/registry setup supports provenance from GitHub Actions.
+Provenance is attached automatically when publishing via trusted publishing from a **public** repo (no `--provenance` flag needed).
 
 ## License
 
