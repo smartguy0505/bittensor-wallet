@@ -58,7 +58,7 @@ btw doctor
 The workflow [`.github/workflows/publish-npm.yml`](.github/workflows/publish-npm.yml) runs when you **publish a GitHub Release** (not a draft). It runs `lint`, `test`, then `npm publish` with [provenance](https://docs.npmjs.com/generating-provenance-statements).
 
 1. Bump `"version"` in `package.json` and push to the default branch.
-2. Create and push a matching tag (e.g. `git tag v0.0.1 && git push origin v0.0.1`).
+2. Create and push a matching tag (e.g. `git tag v0.0.2 && git push origin v0.0.2`).
 3. On GitHub: **Releases → Draft a new release** → choose that tag → **Publish release**.
 4. In the repo: **Settings → Secrets and variables → Actions** → add **`NPM_TOKEN`** (an [npm automation token](https://www.npmjs.com/settings/~/tokens)).
 
