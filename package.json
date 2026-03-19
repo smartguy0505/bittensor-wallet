@@ -17,7 +17,7 @@
     "start": "node bin/btw.js",
     "cli": "node bin/btw.js",
     "lint": "eslint .",
-    "test": "node --test"
+    "test": "node --test \"test/**/*.test.js\""
   },
   "keywords": [
     "bittensor",
@@ -26,6 +26,14 @@
     "substrate",
     "blockchain"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/smartguy0505/bittensor-wallet.git"
+  },
+  "bugs": {
+    "url": "https://github.com/smartguy0505/bittensor-wallet/issues"
+  },
+  "homepage": "https://github.com/smartguy0505/bittensor-wallet#readme",
   "license": "MIT",
   "dependencies": {
     "chalk": "^5.4.1",
