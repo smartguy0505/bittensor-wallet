@@ -51,7 +51,7 @@ btw doctor
 |--------|-------------|
 | `npm run cli` | Run CLI with args after `--` |
 | `npm run lint` | ESLint |
-| `npm test` | Node test runner (`test/**/*.test.js`) |
+| `npm test` | Node test runner (all `test/**/*.test.js` via `scripts/run-tests.mjs`) |
 
 ## Publishing to npm (GitHub Actions)
 
