@@ -27,7 +27,8 @@ test("btw doctor prints environment summary", () => {
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /Bittensor Wallet doctor/);
   assert.match(r.stdout, /cli version/);
-  assert.match(r.stdout, /node\s+v\d/);
+  // Chalk may wrap the "node" label in ANSI; allow gaps between label and vX.Y.Z.
+  assert.match(r.stdout, /node[\s\S]*?v\d+\.\d+\.\d+/);
   assert.match(r.stdout, /bittensor-wallet/);
 });
 
