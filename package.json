@@ -1,0 +1,38 @@
+{
+  "name": "bittensor-wallet",
+  "version": "0.0.1",
+  "description": "JavaScript CLI and client library for Bittensor — keys, staking, and subnet participation",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "btw": "./bin/btw.js"
+  },
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node bin/btw.js",
+    "cli": "node bin/btw.js",
+    "lint": "eslint .",
+    "test": "node --test"
+  },
+  "keywords": [
+    "bittensor",
+    "wallet",
+    "cli",
+    "substrate",
+    "blockchain"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.21.0",
+    "globals": "^16.0.0"
+  }
+}
