@@ -11,6 +11,7 @@ export function runBtw(args, env = {}) {
   const bin = join(root, "bin", "btw.js");
   return spawnSync(process.execPath, [bin, ...args], {
     encoding: "utf8",
-    env: { ...process.env, NO_COLOR: "1", ...env },
+    // Apply last so local FORCE_COLOR / TTY hints from the parent shell can't re-enable chalk.
+    env: { ...process.env, ...env, NO_COLOR: "1", FORCE_COLOR: "0" },
   });
 }
