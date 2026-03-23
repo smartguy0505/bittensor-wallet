@@ -117,6 +117,23 @@ test("btw wallet create without name fails in non-interactive mode", () => {
   assert.match(r.stderr, /Wallet name is required/);
 });
 
+test("btw wallet balance fails when wallet does not exist", () => {
+  const configDir = mkdtempSync(join(tmpdir(), "btw-no-balance-wallet-"));
+  const r = runBtw(["wallet", "balance", "--name", "missing"], { BTW_CONFIG_DIR: configDir });
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /No wallets found|not found/);
+});
+
+test("btw wallet balance fails on unsupported network", () => {
+  const configDir = mkdtempSync(join(tmpdir(), "btw-bad-network-"));
+  runBtw(["wallet", "create", "--name", "alice"], { BTW_CONFIG_DIR: configDir });
+  const r = runBtw(["wallet", "balance", "--name", "alice", "--network", "devnet"], {
+    BTW_CONFIG_DIR: configDir,
+  });
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /Unsupported network/);
+});
+
 test("btw unknown-command exits with error", () => {
   const r = runBtw(["definitely-not-a-command"]);
   assert.notEqual(r.status, 0);

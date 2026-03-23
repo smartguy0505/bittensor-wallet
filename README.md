@@ -22,6 +22,9 @@ npm run cli -- doctor
 npm run cli -- wallet create --name alice
 npm run cli -- wallet create --name alice --words 24
 npm run cli -- wallet list
+npm run cli -- wallet balance --name alice
+npm run cli -- wallet balance --name alice --network finney
+npm run cli -- wallet balance --name alice --network test
 npm run cli -- config-path
 ```
 
