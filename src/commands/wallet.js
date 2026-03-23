@@ -53,13 +53,15 @@ async function selectMnemonicWords(providedWords) {
 
 export function registerWalletCommands(program) {
   const wallet = program.command("wallet").description("key and account operations");
+  wallet.showHelpAfterError("(add --help for usage)");
 
-  wallet
+  const create = wallet
     .command("create")
     .description("create wallet from mnemonic (or generate one)")
     .option("-n, --name [name]", "wallet name (unique)")
     .option("-m, --mnemonic <mnemonic>", "existing 12/15/18/21/24-word mnemonic")
     .option("-w, --words <count>", "generated mnemonic words: 12, 15, 18, 21, or 24")
+    .option("--hide-mnemonic", "do not print mnemonic to console")
     .option("-t, --type <type>", "key type: sr25519 or ed25519", "sr25519")
     .action(async (opts) => {
       const type = String(opts.type || "").toLowerCase();
@@ -82,15 +84,31 @@ export function registerWalletCommands(program) {
         console.log(`  ${chalk.dim("ss58Address")}  ${result.wallet.ss58Address}`);
         console.log(`  ${chalk.dim("type")}     ${result.wallet.type}`);
         if (result.generatedMnemonic) {
-          console.log("");
-          console.log(chalk.yellow("Save this mnemonic now. It is shown only once:"));
-          console.log(result.mnemonic);
+          // Never print sensitive mnemonic when output is hidden/piped.
+          if (!opts.hideMnemonic && process.stdout.isTTY) {
+            console.log("");
+            console.log(chalk.yellow("Save this mnemonic now. It is shown only once:"));
+            console.log(result.mnemonic);
+          } else {
+            const reason = opts.hideMnemonic ? "--hide-mnemonic flag" : "output is not interactive (TTY)";
+            console.log(chalk.dim(`Mnemonic hidden because ${reason}.`));
+          }
         }
       } catch (err) {
         console.error(chalk.red("error") + " " + err.message);
         process.exitCode = 1;
       }
     });
+  create.addHelpText(
+    "after",
+    `
+Examples:
+  $ btw wallet create --name alice
+  $ btw wallet create --name bob --words 24
+  $ btw wallet create --name imported --mnemonic "word1 word2 ..."
+  $ btw wallet create --name secure --hide-mnemonic
+`,
+  );
 
   wallet
     .command("list")
@@ -111,4 +129,24 @@ export function registerWalletCommands(program) {
         process.exitCode = 1;
       }
     });
+
+  wallet.addHelpText(
+    "after",
+    `
+Detailed usage:
+  create   Create a new wallet from an existing mnemonic or generate one.
+           If --name is missing in interactive mode, you will be prompted.
+           If --words is missing in interactive mode, you will be prompted.
+           Use --hide-mnemonic to prevent mnemonic output on console.
+
+  list     Show all saved wallets from BTW_CONFIG_DIR.
+
+Examples:
+  $ btw wallet create --name alice
+  $ btw wallet create --name alice --words 12
+  $ btw wallet create --name alice --words 24 --hide-mnemonic
+  $ btw wallet create --name import --mnemonic "word1 word2 ..."
+  $ btw wallet list
+`,
+  );
 }

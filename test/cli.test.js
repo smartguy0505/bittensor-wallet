@@ -52,7 +52,8 @@ test("btw wallet create generates mnemonic and list shows wallet", () => {
   const create = runBtw(["wallet", "create", "--name", "alice"], { BTW_CONFIG_DIR: configDir });
   assert.equal(create.status, 0, create.stderr);
   assert.match(create.stdout, /wallet "alice" created/);
-  assert.match(create.stdout, /Save this mnemonic now/);
+  assert.doesNotMatch(create.stdout, /Save this mnemonic now/);
+  assert.match(create.stdout, /Mnemonic hidden because output is not interactive/);
 
   const list = runBtw(["wallet", "list"], { BTW_CONFIG_DIR: configDir });
   assert.equal(list.status, 0, list.stderr);
@@ -79,6 +80,15 @@ test("btw wallet create supports --words 24", () => {
   });
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /wallet "seed24" created/);
+});
+
+test("btw wallet create supports --hide-mnemonic flag", () => {
+  const configDir = mkdtempSync(join(tmpdir(), "btw-hide-"));
+  const r = runBtw(["wallet", "create", "--name", "hidden", "--hide-mnemonic"], {
+    BTW_CONFIG_DIR: configDir,
+  });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /Mnemonic hidden because --hide-mnemonic flag/);
 });
 
 test("btw wallet create with invalid mnemonic fails", () => {
