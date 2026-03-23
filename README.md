@@ -19,6 +19,8 @@ Run via npm or link globally:
 ```bash
 npm run cli -- --help
 npm run cli -- doctor
+npm run cli -- wallet create --name alice
+npm run cli -- wallet create --name alice --words 24
 npm run cli -- wallet list
 npm run cli -- config-path
 ```
@@ -74,6 +76,12 @@ The workflow already sets `permissions: id-token: write` and uses **Node 22** + 
 3. On GitHub: **Releases → Draft a new release** → choose that tag → **Publish release**.
 
 Provenance is attached automatically when publishing via trusted publishing from a **public** repo (no `--provenance` flag needed).
+
+## Donations
+
+If this project helps you, donations are appreciated (TAO on Bittensor network):
+
+`5E1rxg2dEix2HVngqKXuBEWp8srMPU1fg9iWxqLFnmtt5XJm`
 
 ## License
 
