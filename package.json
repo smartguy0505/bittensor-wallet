@@ -1,6 +1,6 @@
 {
   "name": "bittensor-wallet",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "JavaScript CLI and client library for Bittensor — keys, staking, and subnet participation",
   "type": "module",
   "engines": {

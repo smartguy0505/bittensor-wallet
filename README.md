@@ -76,7 +76,7 @@ The workflow already sets `permissions: id-token: write` and uses **Node 22** + 
 ### Each release
 
 1. Bump `"version"` in `package.json` and push to the default branch.
-2. Create and push a matching tag (e.g. `git tag v0.0.6 && git push origin v0.0.6`).
+2. Create and push a matching tag (e.g. `git tag v0.0.7 && git push origin v0.0.7`).
 3. On GitHub: **Releases → Draft a new release** → choose that tag → **Publish release**.
 
 Provenance is attached automatically when publishing via trusted publishing from a **public** repo (no `--provenance` flag needed).
