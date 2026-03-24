@@ -52,7 +52,8 @@ test("btw wallet create generates mnemonic and list shows wallet", () => {
   const create = runBtw(["wallet", "create", "--name", "alice"], { BTW_CONFIG_DIR: configDir });
   assert.equal(create.status, 0, create.stderr);
   assert.match(create.stdout, /wallet "alice" created/);
-  assert.match(create.stdout, /Save this mnemonic now/);
+  assert.doesNotMatch(create.stdout, /Save this mnemonic now/);
+  assert.match(create.stdout, /Mnemonic hidden because output is not interactive/);
 
   const list = runBtw(["wallet", "list"], { BTW_CONFIG_DIR: configDir });
   assert.equal(list.status, 0, list.stderr);
@@ -81,6 +82,15 @@ test("btw wallet create supports --words 24", () => {
   assert.match(r.stdout, /wallet "seed24" created/);
 });
 
+test("btw wallet create supports --hide-mnemonic flag", () => {
+  const configDir = mkdtempSync(join(tmpdir(), "btw-hide-"));
+  const r = runBtw(["wallet", "create", "--name", "hidden", "--hide-mnemonic"], {
+    BTW_CONFIG_DIR: configDir,
+  });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /Mnemonic hidden because --hide-mnemonic flag/);
+});
+
 test("btw wallet create with invalid mnemonic fails", () => {
   const configDir = mkdtempSync(join(tmpdir(), "btw-invalid-"));
   const r = runBtw(
@@ -105,6 +115,44 @@ test("btw wallet create without name fails in non-interactive mode", () => {
   const r = runBtw(["wallet", "create"], { BTW_CONFIG_DIR: configDir });
   assert.notEqual(r.status, 0);
   assert.match(r.stderr, /Wallet name is required/);
+});
+
+test("btw wallet balance fails when wallet does not exist", () => {
+  const configDir = mkdtempSync(join(tmpdir(), "btw-no-balance-wallet-"));
+  const r = runBtw(["wallet", "balance", "--name", "missing"], { BTW_CONFIG_DIR: configDir });
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /No wallets found|not found/);
+});
+
+test("btw wallet balance fails on unsupported network", () => {
+  const configDir = mkdtempSync(join(tmpdir(), "btw-bad-network-"));
+  runBtw(["wallet", "create", "--name", "alice"], { BTW_CONFIG_DIR: configDir });
+  const r = runBtw(["wallet", "balance", "--name", "alice", "--network", "devnet"], {
+    BTW_CONFIG_DIR: configDir,
+  });
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /Unsupported network/);
+});
+
+test("btw wallet transfer fails on invalid amount", () => {
+  const configDir = mkdtempSync(join(tmpdir(), "btw-transfer-amount-"));
+  runBtw(["wallet", "create", "--name", "alice"], { BTW_CONFIG_DIR: configDir });
+  const r = runBtw(
+    ["wallet", "transfer", "--from", "alice", "--to", "5E1rxg2dEix2HVngqKXuBEWp8srMPU1fg9iWxqLFnmtt5XJm", "--amount", "abc"],
+    { BTW_CONFIG_DIR: configDir },
+  );
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /Invalid amount/);
+});
+
+test("btw wallet transfer fails when sender wallet is missing", () => {
+  const configDir = mkdtempSync(join(tmpdir(), "btw-transfer-missing-"));
+  const r = runBtw(
+    ["wallet", "transfer", "--from", "missing", "--to", "5E1rxg2dEix2HVngqKXuBEWp8srMPU1fg9iWxqLFnmtt5XJm", "--amount", "0.1"],
+    { BTW_CONFIG_DIR: configDir },
+  );
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /Wallet "missing" not found/);
 });
 
 test("btw unknown-command exits with error", () => {
