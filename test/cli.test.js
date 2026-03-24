@@ -134,6 +134,27 @@ test("btw wallet balance fails on unsupported network", () => {
   assert.match(r.stderr, /Unsupported network/);
 });
 
+test("btw wallet transfer fails on invalid amount", () => {
+  const configDir = mkdtempSync(join(tmpdir(), "btw-transfer-amount-"));
+  runBtw(["wallet", "create", "--name", "alice"], { BTW_CONFIG_DIR: configDir });
+  const r = runBtw(
+    ["wallet", "transfer", "--from", "alice", "--to", "5E1rxg2dEix2HVngqKXuBEWp8srMPU1fg9iWxqLFnmtt5XJm", "--amount", "abc"],
+    { BTW_CONFIG_DIR: configDir },
+  );
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /Invalid amount/);
+});
+
+test("btw wallet transfer fails when sender wallet is missing", () => {
+  const configDir = mkdtempSync(join(tmpdir(), "btw-transfer-missing-"));
+  const r = runBtw(
+    ["wallet", "transfer", "--from", "missing", "--to", "5E1rxg2dEix2HVngqKXuBEWp8srMPU1fg9iWxqLFnmtt5XJm", "--amount", "0.1"],
+    { BTW_CONFIG_DIR: configDir },
+  );
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /Wallet "missing" not found/);
+});
+
 test("btw unknown-command exits with error", () => {
   const r = runBtw(["definitely-not-a-command"]);
   assert.notEqual(r.status, 0);

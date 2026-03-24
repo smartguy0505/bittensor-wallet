@@ -25,6 +25,7 @@ npm run cli -- wallet list
 npm run cli -- wallet balance --name alice
 npm run cli -- wallet balance --name alice --network finney
 npm run cli -- wallet balance --name alice --network test
+npm run cli -- wallet transfer --from alice --to 5F... --amount 0.1 --network finney
 npm run cli -- config-path
 ```
 

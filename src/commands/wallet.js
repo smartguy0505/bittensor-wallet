@@ -1,7 +1,9 @@
 import chalk from "chalk";
 import { createInterface } from "node:readline/promises";
-import { createWallet, listWallets } from "../lib/wallets.js";
+import { createWallet, getWalletByName, listWallets } from "../lib/wallets.js";
 import { disconnectApi, getApi } from "../lib/chain.js";
+import { Keyring } from "@polkadot/keyring";
+import { cryptoWaitReady } from "@polkadot/util-crypto";
 
 async function resolveWalletName(providedName) {
   if (typeof providedName === "string" && providedName.trim() !== "") {
@@ -122,6 +124,20 @@ function pad(text, width, right = false) {
   const str = String(text);
   if (str.length >= width) return str;
   return right ? " ".repeat(width - str.length) + str : str + " ".repeat(width - str.length);
+}
+
+function parseAmountToPlanck(input, decimals) {
+  const value = String(input || "").trim();
+  if (!/^\d+(\.\d+)?$/.test(value)) {
+    throw new Error(`Invalid amount "${input}"`);
+  }
+  const [wholePart, fracPart = ""] = value.split(".");
+  if (fracPart.length > decimals) {
+    throw new Error(`Too many decimal places in amount. Max supported is ${decimals}`);
+  }
+  const fracPadded = fracPart.padEnd(decimals, "0");
+  const base = 10n ** BigInt(decimals);
+  return BigInt(wholePart) * base + BigInt(fracPadded || "0");
 }
 
 export function registerWalletCommands(program) {
@@ -277,6 +293,105 @@ Examples:
       }
     });
 
+  wallet
+    .command("transfer")
+    .description("transfer assets to an ss58 address")
+    .requiredOption("--from <wallet>", "sender wallet name")
+    .requiredOption("--to <ss58>", "destination ss58 address")
+    .requiredOption("--amount <value>", "amount in chain unit, e.g. 0.1")
+    .option("--network <network>", "network: finney or test")
+    .option("--dry-run", "build transfer and print details without submitting")
+    .action(async (opts) => {
+      try {
+        const sender = getWalletByName(opts.from);
+        const amountInput = String(opts.amount || "").trim();
+        if (!/^\d+(\.\d+)?$/.test(amountInput)) {
+          throw new Error(`Invalid amount "${opts.amount}"`);
+        }
+        const network = opts.network ? String(opts.network).toLowerCase() : undefined;
+        const api = await getApi({ network });
+        const decimals = api.registry.chainDecimals[0] ?? 12;
+        const symbol = api.registry.chainTokens[0] ?? "UNIT";
+        const unit = symbol === "TAO" ? "τ" : symbol;
+        const to = String(opts.to).trim();
+        const amountPlanck = parseAmountToPlanck(amountInput, decimals);
+
+        if (amountPlanck <= 0n) {
+          throw new Error("Amount must be greater than zero");
+        }
+
+        await cryptoWaitReady();
+        const keyring = new Keyring({ type: sender.type || "sr25519", ss58Format: api.registry.chainSS58 });
+        const pair = keyring.addFromMnemonic(sender.mnemonic, { name: sender.name });
+
+        const transfer =
+          api.tx.balances.transferAllowDeath?.(to, amountPlanck) ||
+          api.tx.balances.transferKeepAlive?.(to, amountPlanck) ||
+          api.tx.balances.transfer?.(to, amountPlanck);
+
+        if (!transfer) {
+          throw new Error("No supported balances transfer call found on this chain");
+        }
+
+        if (opts.dryRun) {
+          console.log(chalk.cyan("info") + " Dry run (not submitted)");
+          console.log(`  ${chalk.dim("from")}    ${sender.name} (${sender.ss58Address})`);
+          console.log(`  ${chalk.dim("to")}      ${to}`);
+          console.log(`  ${chalk.dim("amount")}  ${opts.amount} ${unit}`);
+          console.log(`  ${chalk.dim("network")} ${network || "default"}`);
+          return;
+        }
+
+        console.log(chalk.cyan("info") + " Submitting transfer...");
+        const hash = await new Promise((resolve, reject) => {
+          let unsub = null;
+          const seen = new Set();
+          transfer
+            .signAndSend(pair, (result) => {
+              const status = result.status;
+              if (status.isReady && !seen.has("ready")) {
+                seen.add("ready");
+                console.log(chalk.dim("  ↳ transaction is ready"));
+              }
+              if (status.isBroadcast && !seen.has("broadcast")) {
+                seen.add("broadcast");
+                console.log(chalk.dim("  ↳ broadcast to peers"));
+              }
+              if (status.isInBlock && !seen.has("inblock")) {
+                seen.add("inblock");
+                console.log(chalk.dim(`  ↳ included in block ${status.asInBlock.toString()}`));
+              }
+              if (status.isFinalized && !seen.has("finalized")) {
+                seen.add("finalized");
+                console.log(chalk.dim(`  ↳ finalized in block ${status.asFinalized.toString()}`));
+              }
+              if (result.status.isInBlock || result.status.isFinalized) {
+                const blockHash = result.status.isFinalized
+                  ? result.status.asFinalized.toString()
+                  : result.status.asInBlock.toString();
+                if (typeof unsub === "function") unsub();
+                resolve(blockHash);
+              }
+            })
+            .then((u) => {
+              unsub = u;
+            })
+            .catch(reject);
+        });
+
+        console.log(chalk.green("✓") + " transfer submitted");
+        console.log(`  ${chalk.dim("from")}    ${sender.name} (${sender.ss58Address})`);
+        console.log(`  ${chalk.dim("to")}      ${to}`);
+        console.log(`  ${chalk.dim("amount")}  ${opts.amount} ${unit}`);
+        console.log(`  ${chalk.dim("block")}   ${hash}`);
+      } catch (err) {
+        console.error(chalk.red("error") + " " + err.message);
+        process.exitCode = 1;
+      } finally {
+        await disconnectApi();
+      }
+    });
+
   wallet.addHelpText(
     "after",
     `
@@ -288,6 +403,7 @@ Detailed usage:
 
   list     Show all saved wallets from BTW_CONFIG_DIR.
   balance  Query free/staked/total balances from chain RPC.
+  transfer Transfer assets from a local wallet to another ss58 address.
 
 Examples:
   $ btw wallet create --name alice
@@ -299,6 +415,8 @@ Examples:
   $ btw wallet balance --wallets alice,bob --network test
   $ btw wallet balance --name alice --network finney
   $ btw wallet balance --name alice --network test
+  $ btw wallet transfer --from alice --to 5F... --amount 0.1 --network finney
+  $ btw wallet transfer --from alice --to 5F... --amount 0.1 --dry-run
 `,
   );
 }

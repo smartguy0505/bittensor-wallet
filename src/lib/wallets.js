@@ -141,3 +141,19 @@ export function listWallets() {
   // Backward compatibility with older single-file storage.
   return readLegacyWalletsFile().wallets;
 }
+
+export function getWalletByName(name) {
+  const path = getWalletFilePath(name);
+  if (!existsSync(path)) {
+    throw new Error(`Wallet "${name}" not found`);
+  }
+  const wallet = readWalletFile(path);
+  const ss58Address = wallet.ss58Address || wallet.address;
+  if (typeof wallet.mnemonic !== "string" || wallet.mnemonic.trim() === "") {
+    throw new Error(`Wallet "${name}" has no mnemonic saved`);
+  }
+  return {
+    ...wallet,
+    ss58Address,
+  };
+}
